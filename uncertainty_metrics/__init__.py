@@ -16,9 +16,16 @@
 """Uncertainty Metrics."""
 
 import warnings
-from uncertainty_metrics import numpy
-from uncertainty_metrics import tensorflow
-from uncertainty_metrics.tensorflow import *
+# pylint: disable=g-import-not-at-top
+try:
+  from uncertainty_metrics import numpy
+except ImportError:
+  warnings.warn("NumPy backend for Uncertainty Merics is not available.")
+try:
+  from uncertainty_metrics import tensorflow
+  from uncertainty_metrics.tensorflow import *
+except ImportError:
+  warnings.warn("TensorFlow backend for Uncertainty Merics is not available.")
 
 _allowed_symbols = [
     "tensorflow",
@@ -26,17 +33,24 @@ _allowed_symbols = [
 ]
 # By default, `import uncertainty_metrics as um` uses the TensorFlow backend's
 # namespace.
-for name in dir(tensorflow):
-  _allowed_symbols.append(name)
+try:
+  _allowed_symbols += dir(tensorflow)
+except NameError:
+  pass
 
 try:
-  from tensorflow.python.util.all_util import remove_undocumented  # pylint: disable=g-direct-tensorflow-import,g-import-not-at-top
+  from tensorflow.python.util.all_util import remove_undocumented  # pylint: disable=g-direct-tensorflow-import
+  remove_undocumented(__name__, _allowed_symbols)
 except ImportError:
   __all__ = _allowed_symbols
+
+try:
+  numpy
+except NameError:
   try:
-    import numpy as np  # pylint: disable=g-import-not-at-top,unused-import
-  except ImportError:
-    warnings.warn("Neither NumPy nor TensorFlow backends are available for "
-                  "Uncertainty Metrics.")
-else:
-  remove_undocumented(__name__, _allowed_symbols)
+    tensorflow
+  except NameError:
+    raise ImportError("Neither NumPy nor TensorFlow backends are available for "
+                      "Uncertainty Metrics. Please install the dependencies "
+                      "for either of them.")
+# pylint: enable=g-import-not-at-top
